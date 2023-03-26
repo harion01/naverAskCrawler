@@ -4,7 +4,7 @@ from datetime import datetime
 import time
 from selenium.webdriver.common.by import By
 
-import openpyxl
+
 from openpyxl.styles import PatternFill
 from openpyxl import Workbook
 from random import uniform
@@ -20,13 +20,23 @@ def sort_kind(index):
     else:
         return 'none'
 
-def collect_urls(driver, keyword, start_date, end_date, sort_index):
-    page_index = 1
-    period_txt = f"&period={start_date}.%7C{end_date}."
-    _sort_kind = sort_kind(sort_index)
-    date = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
-    url_list_filename = f"result/url_list_{keyword.replace(' ', '+')}_{date}.txt"
+def main():
+    chrome_options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(options=chrome_options)
 
+    keyword = '의료 심리학'
+    driver.get(f'https://kin.naver.com/search/list.nhn?query={get_keyword(keyword)}')
+    time.sleep(uniform(0.1, 1.0))
+
+    page_index = 1
+    start_date = '2019.01.10'
+    end_date = '2019.01.20'
+    period_txt = f"&period={start_date}.%7C{end_date}."
+
+    _sort_kind = sort_kind(2)
+    date = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+
+    url_list_filename = f"result/url_list_{keyword.replace(' ', '+')}_{date}.txt"
     with open(url_list_filename, 'w') as f:
         page_url = []
 
@@ -45,18 +55,19 @@ def collect_urls(driver, keyword, start_date, end_date, sort_index):
 
             post_number = driver.find_element(By.CLASS_NAME, 'number').text
             post_number = post_number.strip("()")
-            current_number = post_number.split('/')[0].split('-')[1].replace(',', '')
-            total_number = post_number.split('/')[1].replace(',', '')
+            post_number = str(post_number).replace("(", "")
+            post_number = str(post_number).replace(")", "")
+
+            current_number = post_number.split('/')[0].split('-')[1]
+            current_number = current_number.replace(',', '')
+            total_number = post_number.split('/')[1]
+            total_number = total_number.replace(',', '')
 
             if int(current_number) == int(total_number):
                 break
             else:
                 page_index += 1
 
-    return page_url, url_list_filename
-
-def extract_data(driver, page_url):
-    date = datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
     filename = f'result/{keyword.replace(" ", ".")}_{date}_crawling_result.xlsx'
 
     wb = Workbook()
@@ -83,11 +94,7 @@ def extract_data(driver, page_url):
 
         wb.save(filename)
 
-    return filename
+    driver.close()
 
-def main():
-    chrome_options = webdriver.ChromeOptions()
-    driver = webdriver.Chrome(options=chrome_options)
-
-    keyword = '의료 심리학'
-    driver.get(f'https://kin.naver.com/search/list.nhn?query={get_keyword(keyword)}')
+if __name__ == "__main__":
+    main()
